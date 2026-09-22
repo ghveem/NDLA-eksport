@@ -22,7 +22,24 @@ Prosjektet inneheld ei `fonts/`-mappe med Source Serif 4 og Source Sans 3
 som vert brukte automatisk under eksport. Desse er henta frå Google Fonts
 og ligg lokalt slik at renderinga ikkje er avhengig av internettilgang.
 
-## Framgangsmåte
+## Rask start (tilrådd)
+
+Køyr éitt skript som gjer alt:
+
+```bash
+python lag-pdf.py
+```
+
+Du vel fag frå ei meny, og scriptet køyrer `eksport.py` + `fiks-qr.py` i rekkjefølgje.
+Du kan òg sende inn sitemap-fila direkte:
+
+```bash
+python lag-pdf.py sitemap-norsk-1-abc123.txt
+```
+
+---
+
+## Framgangsmåte (manuelt)
 
 1. Opne [https://ndla.no/sitemap.xml](https://ndla.no/sitemap.xml) og finn faget du vil eksportere
 2. Last ned `.txt`-fila for faget til mappa der du køyrer scriptet
@@ -84,12 +101,13 @@ embed-URL-en) slik at mobilbrukaren kjem til den rette sida.
 
 Eksportane bruker NDLA-brand:
 
-| Element        | Font / farge                        |
-|----------------|-------------------------------------|
-| Brødtekst      | Source Serif 4 / fallback Georgia   |
-| Overskrifter   | Source Sans 3 / fallback system-ui  |
-| Lenker         | `#004785` (NDLA-blå)                |
-| Overskriftsfarge | `#003665` (mørk NDLA-blå)         |
+| Element          | Font / farge                               |
+|------------------|--------------------------------------------|
+| Brødtekst        | Source Serif 4 / fallback Georgia          |
+| Overskrifter     | Source Sans 3 / fallback system-ui         |
+| Forsidehovud     | `#2A1C5E` Kunnskap (NDLA-hovudfarge)       |
+| Forsideaksent    | `#C8A4F7` Motivasjon (NDLA-primærfarge)    |
+| Lenker           | `#004785` (NDLA-blå)                       |
 
 Fontane ligg i `fonts/` og vert lasta via `@font-face` med absolutte filstigar.
 Viss `fonts/`-mappa manglar, faller scriptet stille attende til systemfontar.
