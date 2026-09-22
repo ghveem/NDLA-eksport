@@ -118,7 +118,7 @@ EMBED_JS = """() => {
         }
 
         // Innhaldstype og ev. direkte lenke
-        html += '<p style="margin:4px 0;font-size:10pt;font-weight:bold;color:#222;">'
+        html += '<p style="margin:4px 0;font-size:8pt;color:#555;">'
               + label + '</p>';
         if (linkUrl) {
             // Usynleg lenke: Playwright lagar lenke-annotasjon som fiks-qr.py brukar
