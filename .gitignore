@@ -1,0 +1,10 @@
+# PDF-utdata
+pdf_out/
+matematikk-2p.pdf
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
