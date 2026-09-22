@@ -8,3 +8,8 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Sitemap-filer og eksportmapper
+sitemap-*.txt
+*-[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+.DS_Store

@@ -314,20 +314,132 @@ def build_toc_html(toc: list, subject: str, generated_at: str, pdf_name: str = "
 </style></head><body>
   <h1>{subject}</h1>
   <p class="meta">Generert: {generated_at} &nbsp;·&nbsp; {len(toc)} artiklar</p>
-  <div class="disclaimer">
-    <strong>Merk:</strong> Artiklane på <a href="https://ndla.no">ndla.no</a> kan ha
-    blitt oppdaterte etter at denne PDF-en vart generert. Sjekk gjerne den originale
-    artikkelen viss du oppdagar feil. Vil du melde frå om ein feil i PDFen, send
-    e-post til <a href="mailto:{mailto}">{mailto.split('?')[0]}</a>.
-  </div>
-  <div class="qr-info">
-    <strong>Videoar, simuleringar og interaktivt innhald</strong><br>
-    Denne PDF-en inneheld artiklar med innebygde videoar, simuleringar og andre
-    interaktive element. Slikt innhald let seg ikkje vise i ein PDF, og er difor
-    erstatta med ein QR-kode. Scan QR-koden med mobilen, så kjem du direkte til
-    artikkelen på <a href="https://ndla.no">ndla.no</a> der du kan sjå og bruke innhaldet.
-  </div>
   <ol>{items}</ol>
+</body></html>"""
+
+
+
+def extract_subject_url(all_urls: list, slug: str, sitemap_file: str = "") -> str:
+    """Finn /f/-URL frå sitemap, eller bygg frå slug + ID i filnamnet.
+    Mønster: sitemap-f-kinesisk-1-4d34e9487d52.txt → /f/kinesisk-1/4d34e9487d52
+    """
+    for u in all_urls:
+        if "/f/" in u:
+            return u.rstrip("/")
+    if sitemap_file:
+        m = re.search(r'-([0-9a-f]{8,})$', Path(sitemap_file).stem)
+        if m:
+            return f"https://ndla.no/f/{slug}/{m.group(1)}"
+    return f"https://ndla.no/f/{slug}"
+
+
+async def fetch_subject_meta(client, subject_url: str) -> dict:
+    """Hent OG-metadata frå /f/-sida (tittel, beskriving, bilete)."""
+    def _og(html: str, prop: str) -> str:
+        m = re.search(
+            rf'<meta\s[^>]*property=["\'\']og:{prop}["\'\'][^>]*content=["\'\']([^\"\'\']*)["\'\'][^>]*>',
+            html, re.IGNORECASE,
+        )
+        if not m:
+            m = re.search(
+                rf'<meta\s[^>]*content=["\'\']([^\"\'\']*)["\'\'][^>]*property=["\'\']og:{prop}["\'\'][^>]*>',
+                html, re.IGNORECASE,
+            )
+        return m.group(1).strip() if m else ""
+
+    try:
+        resp = await client.get(subject_url, timeout=15, follow_redirects=True)
+        resp.raise_for_status()
+        html = resp.text
+        return {
+            "title":       _og(html, "title"),
+            "description": _og(html, "description"),
+            "image_url":   _og(html, "image"),
+        }
+    except Exception as exc:
+        print(f"  ⚠️  Klarte ikkje hente forsideinfo: {exc}")
+        return {}
+
+
+def build_cover_html(subject_url: str, meta: dict, generated_at: str,
+                     article_count: int) -> str:
+    """Bygg HTML for forsida basert på metadata frå /f/-sida."""
+    font_css  = _font_face_css()
+    title     = meta.get("title", "")
+    desc      = meta.get("description", "")
+    img_url   = meta.get("image_url", "")
+    img_html  = (
+        '<div class="cover-img-wrap"><img src="' + img_url + '" alt=""></div>'
+    ) if img_url else ""
+    desc_html = f'<p class="desc">{desc}</p>' if desc else ""
+    return f"""<!DOCTYPE html>
+<html lang="nb"><head><meta charset="utf-8"><style>
+  {font_css}
+  :root{{--ndla-blue:#004785;--ndla-blue-dark:#003665;}}
+  *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
+  html,body{{height:100%;}}
+  body{{font-family:'Source Sans 3',system-ui,sans-serif;color:#111;
+        display:flex;flex-direction:column;height:100%;}}
+  .cover-header{{background:var(--ndla-blue);padding:40px 40px 36px;
+                 color:white;flex-shrink:0;}}
+  .ndla-wordmark{{font-size:11pt;font-weight:700;letter-spacing:0.14em;
+                  text-transform:uppercase;color:rgba(255,255,255,0.7);
+                  margin-bottom:36px;}}
+  h1{{font-size:28pt;font-weight:700;line-height:1.15;margin-bottom:14px;
+      color:white;font-family:'Source Sans 3',sans-serif;}}
+  .desc{{font-size:12pt;line-height:1.5;color:rgba(255,255,255,0.82);max-width:520px;}}
+  .cover-img-wrap{{flex-shrink:0;overflow:hidden;max-height:280px;}}
+  .cover-img-wrap img{{width:100%;height:280px;object-fit:cover;display:block;}}
+  .spacer{{flex:1;}}
+  .cover-footer{{padding:22px 40px;border-top:4px solid var(--ndla-blue);
+                 background:white;flex-shrink:0;}}
+  .meta-row{{display:flex;gap:40px;align-items:flex-start;}}
+  .meta-label{{font-size:8pt;font-weight:700;text-transform:uppercase;
+               letter-spacing:0.07em;color:#888;margin-bottom:3px;}}
+  .meta-value{{font-size:10pt;color:#333;}}
+  .meta-value a{{color:var(--ndla-blue);text-decoration:none;}}
+  .notes{{padding:20px 40px 0;flex-shrink:0;}}
+  .note-box{{padding:10px 14px;font-size:9.5pt;line-height:1.5;
+             margin-bottom:10px;font-family:'Source Sans 3',sans-serif;}}
+  .disclaimer{{background:#f0f4fa;border-left:4px solid var(--ndla-blue);
+               color:#222;}}
+  .qr-info{{background:#fdf8ec;border-left:4px solid #c08000;color:#222;}}
+  .notes a{{color:var(--ndla-blue);}}
+  @page{{size:A4;margin:0;}}
+</style></head><body>
+  <div class="cover-header">
+    <div class="ndla-wordmark">NDLA</div>
+    <h1>{title}</h1>
+    {desc_html}
+  </div>
+  {img_html}
+  <div class="notes">
+    <div class="note-box disclaimer">
+      <strong>Merk:</strong> Artiklane på <a href="https://ndla.no">ndla.no</a> kan ha
+      blitt oppdaterte etter at denne PDF-en vart generert. Sjekk gjerne den originale
+      artikkelen viss du oppdagar feil. Vil du melde frå om ein feil i PDFen, send
+      e-post til <a href="mailto:hjelp@ndla.no">hjelp@ndla.no</a>.
+    </div>
+    <div class="note-box qr-info">
+      <strong>Videoar, simuleringar og interaktivt innhald</strong><br>
+      Denne PDF-en inneheld artiklar med innebygde videoar, simuleringar og andre
+      interaktive element. Slikt innhald let seg ikkje vise i ein PDF, og er difor
+      erstatta med ein QR-kode. Scan QR-koden med mobilen, så kjem du direkte til
+      artikkelen på <a href="https://ndla.no">ndla.no</a> der du kan sjå og bruke innhaldet.
+    </div>
+  </div>
+  <div class="cover-footer">
+    <div class="meta-row">
+      <div><div class="meta-label">Generert</div>
+           <div class="meta-value">{generated_at}</div></div>
+      <div><div class="meta-label">Artiklar</div>
+           <div class="meta-value">{article_count}</div></div>
+      <div><div class="meta-label">Kjelde</div>
+           <div class="meta-value">
+             <a href="{subject_url}">{subject_url}</a>
+           </div></div>
+    </div>
+  </div>
 </body></html>"""
 
 
@@ -366,14 +478,29 @@ async def main():
             else:
                 print(f"  ⚠️  {i+1:3d}/{len(urls)}: ingen iframeSrc — hoppar over ({url})")
 
+    # Hent forsideinformasjon frå /f/-sida
+    subject_url = extract_subject_url(all_urls, slug, str(sitemap_path))
+    print(f"\nHentar forsideinfo frå {subject_url} …")
+    async with httpx.AsyncClient() as client:
+        subject_meta = await fetch_subject_meta(client, subject_url)
+    subject = subject_meta.get("title") or slug.replace("-", " ").title()
+    if subject_meta.get("title"):
+        print(f"  Tittel: {subject}")
+
     print(f"\nLagar PDF-ar for {len(toc)} artiklar …")
     errors = []
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page    = await browser.new_page()
 
+        # Forside
+        cover_html = build_cover_html(subject_url, subject_meta, generated_at, len(toc))
+        await page.set_content(cover_html, wait_until="load")
+        await page.pdf(path=str(out_dir / "0000_cover.pdf"), format="A4", tagged=True,
+                       margin={"top": "0", "bottom": "0", "left": "0", "right": "0"})
+        print("  Forside: ferdig")
+
         # Innhaldsliste
-        subject  = slug.replace("-", " ").title()
         toc_html = build_toc_html(toc, subject, generated_at, output_pdf.name)
         await page.set_content(toc_html, wait_until="load")
         await page.pdf(path=str(out_dir / "0000_toc.pdf"), format="A4", tagged=True,
@@ -402,15 +529,32 @@ async def main():
 
         await browser.close()
 
+    # Lagre toc.json for seinare --regen-toc
+    import json as _j
+    toc_json = folder / "toc.json"
+    toc_json.write_text(_j.dumps(
+        {
+            "subject_url":  subject_url,
+            "subject_meta": subject_meta,
+            "articles": [{"title": t, "file": f, "iframe_url": u, "ndla_url": o}
+                         for t, f, u, o in toc],
+        },
+        ensure_ascii=False, indent=2,
+    ))
+
     # Slå saman
     print(f"\nSlår saman til {output_pdf} …")
+    def _pdf_sort_key(p: Path) -> tuple:
+        if p.stem == "0000_cover": return (0, p.stem)
+        if p.stem == "0000_toc":   return (1, p.stem)
+        return (2, p.stem)
     merger = pypdf.PdfWriter()
-    for f in sorted(out_dir.glob("*.pdf")):
+    for f in sorted(out_dir.glob("*.pdf"), key=_pdf_sort_key):
         merger.append(str(f))
     merger.write(str(output_pdf))
     merger.close()
 
-    print(f"\n✅ Ferdig: {output_pdf}  ({len(toc) - len(errors)} artiklar + TOC)")
+    print(f"\n✅ Ferdig: {output_pdf}  (forside + TOC + {len(toc) - len(errors)} artiklar)")
     if errors:
         print(f"\n⚠️  {len(errors)} artiklar feila:")
         for title, url, msg in errors:
