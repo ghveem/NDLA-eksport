@@ -17,6 +17,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 import segno
@@ -194,7 +195,12 @@ async def render_to_pdf(page, iframe_url: str, out_path: Path,
     await page.add_style_tag(content=PRINT_CSS)
 
     # Generer QR-kode til ndla.no-artikkelsida (data URI — ingen ekstern HTTP)
-    qr_target = original_url or iframe_url
+    qr_base = original_url or iframe_url
+    if pdf_name:
+        sep = "&" if "?" in qr_base else "?"
+        qr_target = qr_base + sep + "mtm_source=pdf-eksport&mtm_medium=" + quote(pdf_name, safe="")
+    else:
+        qr_target = qr_base
     qr_data_uri = make_qr_data_uri(qr_target)
 
     # Injiser QR og NDLA-URL som globale variablar før EMBED_JS køyrer
