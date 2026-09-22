@@ -54,6 +54,19 @@ Emneartiklar får prefiks `Emne:` i innhaldslista.
 - **Lenker**: alle lenker i artikkelen (inkl. «relatert innhald») er synlege og klikkbare
 - **Nedst**: synleg URL til artikkelen på ndla.no
 
+## Innebygd innhald (video, H5P, simuleringar)
+
+Innhald som ikkje kan visast i PDF vert erstatta med ei boks:
+
+| Kjelde | Kva som visast |
+|--------|---------------|
+| YouTube | Thumbnail-bilde + klikkbar lenke |
+| Brightcove / video | Posterbilete + klikkbar lenke |
+| H5P | QR-kode til innhaldet + klikkbar lenke |
+| Andre iframes | QR-kode til innhaldet + klikkbar lenke |
+
+QR-kodar vert genererte via Google Charts API ved eksporttidspunktet.
+
 ## Innhaldsliste (første side)
 
 Viser generert dato/tid og ein ansvarsfraskrivingstekst:

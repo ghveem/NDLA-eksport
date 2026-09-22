@@ -40,6 +40,69 @@ PRINT_CSS = """
     a[href] { color: #004785; text-decoration: underline; }
 """
 
+
+# ── Innebygd innhald: erstatt med thumbnail + lenke ──────────────────────────
+
+EMBED_JS = """() => {
+    const makeBox = (thumbUrl, label, linkUrl) => {
+        const box = document.createElement('div');
+        box.style.cssText = 'border:1px solid #ccc;border-radius:4px;padding:12px;'
+                          + 'margin:12px 0;background:#f9f9f9;page-break-inside:avoid;'
+                          + 'font-family:sans-serif;';
+        let html = '';
+        const imgSrc = thumbUrl
+            ? thumbUrl
+            : 'https://chart.googleapis.com/chart?chs=200x200&cht=qr'
+              + '&choe=UTF-8&chl=' + encodeURIComponent(linkUrl || label);
+        const imgAlt = thumbUrl ? label : 'QR-kode til: ' + (linkUrl || label);
+        html += '<img src="' + imgSrc + '" alt="' + imgAlt + '" '
+              + 'style="max-width:200px;max-height:200px;display:block;margin-bottom:8px;">';
+        if (linkUrl) {
+            html += '<p style="margin:4px 0;font-size:9pt;color:#444;">'
+                  + label + ': <a href="' + linkUrl + '" '
+                  + 'style="color:#004785;text-decoration:underline;">'
+                  + linkUrl + '</a></p>';
+        }
+        box.innerHTML = html;
+        return box;
+    };
+
+    // YouTube
+    document.querySelectorAll(
+        'iframe[src*="youtube.com"], iframe[src*="youtube-nocookie.com"]'
+    ).forEach(el => {
+        const m = (el.src || '').match(/\\/embed\\/([a-zA-Z0-9_-]+)/);
+        if (!m || !el.parentNode) return;
+        const id    = m[1];
+        const thumb = 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg';
+        const link  = 'https://www.youtube.com/watch?v=' + id;
+        el.parentNode.replaceChild(makeBox(thumb, 'YouTube-video', link), el);
+    });
+
+    // Video med poster-attributt (Brightcove og andre)
+    document.querySelectorAll('video[poster]').forEach(el => {
+        if (!el.parentNode) return;
+        const poster = el.poster || '';
+        const src    = el.src || el.querySelector('source')?.src || poster;
+        el.parentNode.replaceChild(makeBox(poster || null, 'Video', src), el);
+    });
+
+    // H5P
+    document.querySelectorAll('iframe[src*="h5p"]').forEach(el => {
+        if (!el.parentNode) return;
+        el.parentNode.replaceChild(
+            makeBox(null, 'Interaktivt innhald (H5P)', el.src), el
+        );
+    });
+
+    // Resterande iframes
+    document.querySelectorAll('iframe').forEach(el => {
+        const src = el.src || '';
+        if (!src || src === 'about:blank' || !el.parentNode) return;
+        el.parentNode.replaceChild(makeBox(null, 'Innebygd innhald', src), el);
+    });
+}"""
+
 # ── Hjelpefunksjonar ──────────────────────────────────────────────────────────
 
 def derive_slug(sitemap_file: str) -> str:
@@ -98,6 +161,7 @@ async def render_to_pdf(page, iframe_url: str, out_path: Path,
     """Opne article-iframe-URL i Playwright og lag PDF."""
     await page.goto(iframe_url, wait_until="networkidle", timeout=60_000)
     await page.add_style_tag(content=PRINT_CSS)
+    await page.evaluate(EMBED_JS)
 
     if original_url:
         safe_url = original_url.replace("'", "%27")
