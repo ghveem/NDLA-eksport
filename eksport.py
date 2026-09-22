@@ -10,12 +10,16 @@ Bruk:
 """
 
 import asyncio
+import base64
+import io
+import json
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import httpx
+import segno
 from playwright.async_api import async_playwright
 import pypdf
 
@@ -41,25 +45,42 @@ PRINT_CSS = """
 """
 
 
-# ── Innebygd innhald: erstatt med thumbnail + lenke ──────────────────────────
+# ── Innebygd innhald: erstatt med thumbnail + QR-lenke til ndla.no ───────────
+
+# Merk: window.__qrDataUri og window.__ndlaUrl vert sett frå Python
+# før dette skriptet køyrer, slik at QR-koden alltid peikar til
+# den rette NDLA-artikkelsida – ingen ekstern HTTP nødvendig.
 
 EMBED_JS = """() => {
+    const qrSrc  = window.__qrDataUri || '';
+    const ndlaUrl = window.__ndlaUrl  || '';
+
     const makeBox = (thumbUrl, label, linkUrl) => {
         const box = document.createElement('div');
         box.style.cssText = 'border:1px solid #ccc;border-radius:4px;padding:12px;'
                           + 'margin:12px 0;background:#f9f9f9;page-break-inside:avoid;'
                           + 'font-family:sans-serif;';
         let html = '';
-        const imgSrc = thumbUrl
-            ? thumbUrl
-            : 'https://chart.googleapis.com/chart?chs=200x200&cht=qr'
-              + '&choe=UTF-8&chl=' + encodeURIComponent(linkUrl || label);
-        const imgAlt = thumbUrl ? label : 'QR-kode til: ' + (linkUrl || label);
-        html += '<img src="' + imgSrc + '" alt="' + imgAlt + '" '
-              + 'style="max-width:200px;max-height:200px;display:block;margin-bottom:8px;">';
+
+        // Bilde: thumbnail viss tilgjengeleg, elles QR-kode til ndla.no-artikkelen
+        if (thumbUrl) {
+            html += '<img src="' + thumbUrl + '" alt="' + label + '" '
+                  + 'style="max-width:280px;max-height:200px;display:block;margin-bottom:8px;">';
+        } else if (qrSrc) {
+            html += '<img src="' + qrSrc + '" alt="QR-kode til artikkelen på ndla.no" '
+                  + 'style="width:150px;height:150px;display:block;margin-bottom:8px;">';
+            if (ndlaUrl) {
+                html += '<p style="margin:2px 0;font-size:8pt;color:#555;">'
+                      + 'Scan for å opne på ndla.no</p>';
+            }
+        }
+
+        // Innhaldstype og ev. direkte lenke
+        html += '<p style="margin:4px 0;font-size:10pt;font-weight:bold;color:#222;">'
+              + label + '</p>';
         if (linkUrl) {
-            html += '<p style="margin:4px 0;font-size:9pt;color:#444;">'
-                  + label + ': <a href="' + linkUrl + '" '
+            html += '<p style="margin:4px 0;font-size:8pt;color:#444;">'
+                  + '<a href="' + linkUrl + '" '
                   + 'style="color:#004785;text-decoration:underline;">'
                   + linkUrl + '</a></p>';
         }
@@ -71,7 +92,7 @@ EMBED_JS = """() => {
     document.querySelectorAll(
         'iframe[src*="youtube.com"], iframe[src*="youtube-nocookie.com"]'
     ).forEach(el => {
-        const m = (el.src || '').match(/\\/embed\\/([a-zA-Z0-9_-]+)/);
+        const m = (el.src || '').match(/\/embed\/([a-zA-Z0-9_-]+)/);
         if (!m || !el.parentNode) return;
         const id    = m[1];
         const thumb = 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg';
@@ -91,7 +112,7 @@ EMBED_JS = """() => {
     document.querySelectorAll('iframe[src*="h5p"]').forEach(el => {
         if (!el.parentNode) return;
         el.parentNode.replaceChild(
-            makeBox(null, 'Interaktivt innhald (H5P)', el.src), el
+            makeBox(null, 'Interaktivt innhald (H5P)', ndlaUrl || el.src), el
         );
     });
 
@@ -99,11 +120,20 @@ EMBED_JS = """() => {
     document.querySelectorAll('iframe').forEach(el => {
         const src = el.src || '';
         if (!src || src === 'about:blank' || !el.parentNode) return;
-        el.parentNode.replaceChild(makeBox(null, 'Innebygd innhald', src), el);
+        el.parentNode.replaceChild(makeBox(null, 'Innebygd innhald', ndlaUrl || src), el);
     });
 }"""
 
 # ── Hjelpefunksjonar ──────────────────────────────────────────────────────────
+
+def make_qr_data_uri(url: str) -> str:
+    """Generer QR-kode som PNG data URI (ingen ekstern HTTP)."""
+    qr  = segno.make(url, error='m')
+    buf = io.BytesIO()
+    qr.save(buf, kind='png', scale=4, border=2)
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    return f"data:image/png;base64,{b64}"
+
 
 def derive_slug(sitemap_file: str) -> str:
     """kinesisk-1 frå sitemap-f-kinesisk-1-4d34e9487d52.txt"""
@@ -157,10 +187,21 @@ async def get_iframe_info(client: httpx.AsyncClient, article_url: str):
 
 
 async def render_to_pdf(page, iframe_url: str, out_path: Path,
-                        original_url: str = "", title: str = ""):
+                        original_url: str = "", title: str = "",
+                        pdf_name: str = ""):
     """Opne article-iframe-URL i Playwright og lag PDF."""
     await page.goto(iframe_url, wait_until="networkidle", timeout=60_000)
     await page.add_style_tag(content=PRINT_CSS)
+
+    # Generer QR-kode til ndla.no-artikkelsida (data URI — ingen ekstern HTTP)
+    qr_target = original_url or iframe_url
+    qr_data_uri = make_qr_data_uri(qr_target)
+
+    # Injiser QR og NDLA-URL som globale variablar før EMBED_JS køyrer
+    await page.evaluate(
+        "(args) => { window.__qrDataUri = args.qr; window.__ndlaUrl = args.url; }",
+        {"qr": qr_data_uri, "url": qr_target}
+    )
     await page.evaluate(EMBED_JS)
 
     if original_url:
@@ -175,6 +216,22 @@ async def render_to_pdf(page, iframe_url: str, out_path: Path,
                              + '{safe_url}</a>';
             document.body.appendChild(footer);
         }}""")
+
+    # Kampanjesporing på alle ndla.no-lenker
+    if pdf_name:
+        await page.evaluate(
+            """(name) => {
+                document.querySelectorAll('a[href]').forEach(a => {
+                    const h = a.getAttribute('href') || '';
+                    if (h.startsWith('https://ndla.no') && !h.includes('mtm_source')) {
+                        a.setAttribute('href', h
+                            + (h.includes('?') ? '&' : '?')
+                            + 'mtm_source=pdf-eksport&mtm_medium=' + encodeURIComponent(name));
+                    }
+                });
+            }""",
+            pdf_name
+        )
 
     await page.pdf(
         path=str(out_path),
@@ -268,7 +325,7 @@ async def main():
             for attempt in range(3):
                 try:
                     await render_to_pdf(page, iframe_url, out_path,
-                                        original_url, title)
+                                        original_url, title, output_pdf.name)
                     last_exc = None
                     break
                 except Exception as exc:
