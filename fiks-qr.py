@@ -225,8 +225,10 @@ def remerge(folder: Path):
     merger = pymupdf.open()
     for f in sorted(sider_dir.glob("*.pdf")):
         merger.insert_pdf(pymupdf.open(str(f)))
-    merger.save(str(merged))
+    # Skriv til bytes fyrst for å unngå slett+opprette (ikkje tillate i delt mappe)
+    data = merger.tobytes()
     merger.close()
+    merged.write_bytes(data)
     print(f"✅ Ny samla PDF: {merged}")
 
 
@@ -241,6 +243,60 @@ def debug_links(folder: Path):
                     print(f"  {lk.get('uri', '')}")
         doc.close()
 
+
+
+# ── Framsideboksar ────────────────────────────────────────────────────────────
+
+def add_cover_boxes(toc_path: Path) -> bool:
+    """Legg til disclaimer- og QR-forklaringsboks nedst på framsida."""
+    doc  = pymupdf.open(str(toc_path))
+    page = doc[0]
+    pw   = page.rect.width
+    ph   = page.rect.height
+
+    BLUE  = (0, 71/255, 133/255)          # #004785
+    LBLUE = (230/255, 240/255, 250/255)   # lys blå
+    AMBER = (253/255, 248/255, 236/255)   # lys amber
+    DARK  = (0.1, 0.1, 0.1)
+
+    M  = 40
+    BW = pw - 2 * M
+
+    B2_H = 76
+    B1_H = 52
+    GAP  = 10
+    b2_y = ph - M - B2_H
+    b1_y = b2_y - GAP - B1_H
+
+    # Boks 1: Disclaimer
+    r1 = pymupdf.Rect(M, b1_y, M + BW, b1_y + B1_H)
+    page.draw_rect(r1, color=BLUE, fill=LBLUE, width=1.2)
+    n1 = page.insert_textbox(
+        pymupdf.Rect(r1.x0 + 8, r1.y0 + 8, r1.x1 - 8, r1.y1 - 8),
+        "Dette er ein uoffisiell PDF-eksport frå ndla.no. "
+        "Innhaldet kan vere utdatert. Sjå ndla.no for siste versjon.",
+        fontname="helv", fontsize=9, color=DARK,
+    )
+
+    # Boks 2: QR-forklaring
+    r2 = pymupdf.Rect(M, b2_y, M + BW, b2_y + B2_H)
+    page.draw_rect(r2, color=BLUE, fill=AMBER, width=1.2)
+    n2 = page.insert_textbox(
+        pymupdf.Rect(r2.x0 + 8, r2.y0 + 8, r2.x1 - 8, r2.y1 - 8),
+        "Videoar, simuleringar og interaktivt innhald — "
+        "Denne PDF-en inneheld artiklar med innebygde videoar, simuleringar og andre "
+        "interaktive element. Slikt innhald kan ikkje visast i ein PDF, og er difor "
+        "erstatta med ein QR-kode. Skann QR-koden med mobilen, "
+        "så kjem du direkte til artikkelen på ndla.no.",
+        fontname="helv", fontsize=9, color=DARK,
+    )
+
+    if n1 < 0 or n2 < 0:
+        print("  ⚠️  Tekst gjekk utanfor boks — prøv mindre skrift")
+
+    doc.save(str(toc_path), incremental=True, encryption=pymupdf.PDF_ENCRYPT_KEEP)
+    doc.close()
+    return True
 
 # ── Hovudprogram ──────────────────────────────────────────────────────────────
 
@@ -268,6 +324,18 @@ def main():
             print(f"\n🎉 Ferdig — {total} duplikat(ar) fjerna.")
         else:
             print("\nℹ️  Ingen duplikat funne.")
+        return
+
+    if "--infoboks" in flags:
+        toc_path = sider_dir / "0000_toc.pdf"
+        if not toc_path.exists():
+            print("\u274c  0000_toc.pdf finst ikkje i sider/.")
+            sys.exit(1)
+        print(f"\nLegg til infoboksar på framsida …")
+        add_cover_boxes(toc_path)
+        print("  \u2705 Infoboksar lagt til")
+        remerge(folder)
+        print("\n\U0001f389 Ferdig.")
         return
 
     pdf_name = folder.name + ".pdf"

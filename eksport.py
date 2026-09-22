@@ -29,21 +29,62 @@ import pypdf
 # /f/ er sjølve faget – hoppar over
 INCLUDE_TYPES = ("/e/", "/r/")
 
-PRINT_CSS = """
+def _font_face_css() -> str:
+    """Returnerer @font-face CSS viss fontar finst i fonts/-mappa."""
+    d    = Path(__file__).parent / "fonts"
+    ss3  = d / "SourceSans3.ttf"
+    sf4  = d / "SourceSerif4.ttf"
+    sf4i = d / "SourceSerif4Italic.ttf"
+    if not (ss3.exists() and sf4.exists()):
+        return ""
+    italic_src = f"url('file://{sf4i}')" if sf4i.exists() else f"url('file://{sf4}')"
+    return f"""
+@font-face {{
+    font-family: 'Source Serif 4';
+    src: url('file://{sf4}') format('truetype');
+    font-weight: 100 900; font-style: normal;
+}}
+@font-face {{
+    font-family: 'Source Serif 4';
+    src: {italic_src} format('truetype');
+    font-weight: 100 900; font-style: italic;
+}}
+@font-face {{
+    font-family: 'Source Sans 3';
+    src: url('file://{ss3}') format('truetype');
+    font-weight: 100 900; font-style: normal;
+}}
+"""
+
+PRINT_CSS_BASE = """
+    :root {
+        --ndla-blue:      #004785;
+        --ndla-blue-dark: #003665;
+        --ndla-grey-rule: #e0e0e0;
+    }
     body {
         font-size: 11pt;
-        font-family: Georgia, serif;
-        line-height: 1.5;
+        font-family: 'Source Serif 4', Georgia, serif;
+        line-height: 1.55;
         color: #111;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Source Sans 3', system-ui, sans-serif;
+        font-weight: 600;
+        color: var(--ndla-blue-dark);
+        page-break-after: avoid;
     }
     @page { size: A4; margin: 20mm; }
     img { max-width: 100%; }
     figure, .c-figure { page-break-inside: avoid; }
-    h1, h2, h3 { page-break-after: avoid; }
-    pre, code { font-size: 9pt; }
+    pre, code { font-size: 9pt; font-family: monospace; }
     nav, .c-breadcrumb, footer { display: none !important; }
-    a[href] { color: #004785; text-decoration: underline; }
+    a[href] { color: var(--ndla-blue); text-decoration: underline; }
+    hr { border: none; border-top: 1px solid var(--ndla-grey-rule); margin: 1.2em 0; }
 """
+
+def _print_css() -> str:
+    return _font_face_css() + PRINT_CSS_BASE
 
 
 # ── Innebygd innhald: erstatt med thumbnail + QR-lenke til ndla.no ───────────
@@ -192,7 +233,7 @@ async def render_to_pdf(page, iframe_url: str, out_path: Path,
                         pdf_name: str = ""):
     """Opne article-iframe-URL i Playwright og lag PDF."""
     await page.goto(iframe_url, wait_until="networkidle", timeout=60_000)
-    await page.add_style_tag(content=PRINT_CSS)
+    await page.add_style_tag(content=_print_css())
 
     # Generer QR-kode til ndla.no-artikkelsida (data URI — ingen ekstern HTTP)
     qr_base = original_url or iframe_url
@@ -252,14 +293,23 @@ def build_toc_html(toc: list, subject: str, generated_at: str, pdf_name: str = "
     items  = "\n".join(f"<li>{t}</li>" for t, _, _, _ in toc)
     subj   = f"PDF-eksport-av-fag: {pdf_name}" if pdf_name else "PDF-eksport-av-fag"
     mailto = f"hjelp@ndla.no?subject={subj}"
+    font_css = _font_face_css()
     return f"""<!DOCTYPE html>
 <html lang="nb"><head><meta charset="utf-8"><style>
-  body{{font-family:sans-serif;padding:30px;}}
-  h1{{font-size:18pt;margin-bottom:4px;}}
-  .meta{{color:#555;font-size:10pt;margin-bottom:16px;}}
-  .disclaimer{{background:#f5f5f5;border-left:3px solid #004785;
-    padding:10px 14px;font-size:10pt;color:#333;margin-bottom:20px;line-height:1.5;}}
-  a{{color:#004785;}} ol{{margin-top:0;}} li{{padding:4px 0;font-size:11pt;}}
+  {font_css}
+  :root{{--ndla-blue:#004785;--ndla-blue-dark:#003665;}}
+  body{{font-family:'Source Serif 4',Georgia,serif;padding:30px;font-size:11pt;line-height:1.55;color:#111;}}
+  h1{{font-family:'Source Sans 3',sans-serif;font-size:20pt;font-weight:700;
+      color:var(--ndla-blue-dark);margin-bottom:4px;}}
+  .meta{{color:#555;font-size:10pt;margin-bottom:20px;font-family:'Source Sans 3',sans-serif;}}
+  .disclaimer{{background:#f0f4fa;border-left:4px solid var(--ndla-blue);
+    padding:10px 14px;font-size:10pt;color:#222;margin-bottom:14px;line-height:1.5;
+    font-family:'Source Sans 3',sans-serif;}}
+  .qr-info{{background:#fdf8ec;border-left:4px solid #c08000;
+    padding:10px 14px;font-size:10pt;color:#222;margin-bottom:20px;line-height:1.5;
+    font-family:'Source Sans 3',sans-serif;}}
+  a{{color:var(--ndla-blue);}} ol{{margin-top:0;}}
+  li{{padding:4px 0;font-size:11pt;font-family:'Source Sans 3',sans-serif;}}
   @page{{size:A4;margin:20mm;}}
 </style></head><body>
   <h1>{subject}</h1>
@@ -269,6 +319,13 @@ def build_toc_html(toc: list, subject: str, generated_at: str, pdf_name: str = "
     blitt oppdaterte etter at denne PDF-en vart generert. Sjekk gjerne den originale
     artikkelen viss du oppdagar feil. Vil du melde frå om ein feil i PDFen, send
     e-post til <a href="mailto:{mailto}">{mailto.split('?')[0]}</a>.
+  </div>
+  <div class="qr-info">
+    <strong>Videoar, simuleringar og interaktivt innhald</strong><br>
+    Denne PDF-en inneheld artiklar med innebygde videoar, simuleringar og andre
+    interaktive element. Slikt innhald let seg ikkje vise i ein PDF, og er difor
+    erstatta med ein QR-kode. Scan QR-koden med mobilen, så kjem du direkte til
+    artikkelen på <a href="https://ndla.no">ndla.no</a> der du kan sjå og bruke innhaldet.
   </div>
   <ol>{items}</ol>
 </body></html>"""
