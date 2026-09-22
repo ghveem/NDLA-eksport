@@ -121,10 +121,10 @@ EMBED_JS = """() => {
         html += '<p style="margin:4px 0;font-size:10pt;font-weight:bold;color:#222;">'
               + label + '</p>';
         if (linkUrl) {
-            html += '<p style="margin:4px 0;font-size:8pt;color:#444;">'
-                  + '<a href="' + linkUrl + '" '
-                  + 'style="color:#004785;text-decoration:underline;">'
-                  + linkUrl + '</a></p>';
+            // Usynleg lenke: Playwright lagar lenke-annotasjon som fiks-qr.py brukar
+            html += '<a href="' + linkUrl + '" aria-hidden="true" '
+                  + 'style="position:absolute;width:1px;height:1px;overflow:hidden;'
+                  + 'opacity:0;pointer-events:none;"></a>';
         }
         box.innerHTML = html;
         return box;
@@ -134,7 +134,7 @@ EMBED_JS = """() => {
     document.querySelectorAll(
         'iframe[src*="youtube.com"], iframe[src*="youtube-nocookie.com"]'
     ).forEach(el => {
-        const m = (el.src || '').match(/\/embed\/([a-zA-Z0-9_-]+)/);
+        const m = (el.src || '').match(/[/]embed[/]([a-zA-Z0-9_-]+)/);
         if (!m || !el.parentNode) return;
         const id    = m[1];
         const thumb = 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg';
@@ -375,36 +375,47 @@ def build_cover_html(subject_url: str, meta: dict, generated_at: str,
     return f"""<!DOCTYPE html>
 <html lang="nb"><head><meta charset="utf-8"><style>
   {font_css}
-  :root{{--ndla-blue:#004785;--ndla-blue-dark:#003665;}}
+  :root{{
+    --kunnskap:        #2A1C5E;
+    --motivasjon:      #C8A4F7;
+    --motivasjon-pale: #F9F6FE;
+    --svart:           #18181B;
+    --hvit:            #FFFFFF;
+  }}
   *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
   html,body{{height:100%;}}
-  body{{font-family:'Source Sans 3',system-ui,sans-serif;color:#111;
-        display:flex;flex-direction:column;height:100%;}}
-  .cover-header{{background:var(--ndla-blue);padding:40px 40px 36px;
-                 color:white;flex-shrink:0;}}
-  .ndla-wordmark{{font-size:11pt;font-weight:700;letter-spacing:0.14em;
-                  text-transform:uppercase;color:rgba(255,255,255,0.7);
-                  margin-bottom:36px;}}
-  h1{{font-size:28pt;font-weight:700;line-height:1.15;margin-bottom:14px;
-      color:white;font-family:'Source Sans 3',sans-serif;}}
-  .desc{{font-size:12pt;line-height:1.5;color:rgba(255,255,255,0.82);max-width:520px;}}
-  .cover-img-wrap{{flex-shrink:0;overflow:hidden;max-height:280px;}}
-  .cover-img-wrap img{{width:100%;height:280px;object-fit:cover;display:block;}}
-  .spacer{{flex:1;}}
-  .cover-footer{{padding:22px 40px;border-top:4px solid var(--ndla-blue);
-                 background:white;flex-shrink:0;}}
-  .meta-row{{display:flex;gap:40px;align-items:flex-start;}}
-  .meta-label{{font-size:8pt;font-weight:700;text-transform:uppercase;
-               letter-spacing:0.07em;color:#888;margin-bottom:3px;}}
-  .meta-value{{font-size:10pt;color:#333;}}
-  .meta-value a{{color:var(--ndla-blue);text-decoration:none;}}
-  .notes{{padding:20px 40px 0;flex-shrink:0;}}
-  .note-box{{padding:10px 14px;font-size:9.5pt;line-height:1.5;
+  body{{font-family:'Source Sans 3',system-ui,sans-serif;color:var(--svart);
+        display:flex;flex-direction:column;height:100%;background:var(--hvit);
+        -webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  .cover-header{{background:var(--kunnskap);padding:52px 52px 48px;
+                 color:var(--hvit);flex-shrink:0;
+                 border-bottom:5px solid var(--motivasjon);
+                 -webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  .ndla-wordmark{{font-size:9pt;font-weight:800;letter-spacing:0.28em;
+                  text-transform:uppercase;color:var(--motivasjon);margin-bottom:28px;}}
+  h1{{font-size:38pt;font-weight:900;line-height:1.08;margin-bottom:20px;
+      color:var(--hvit);font-family:'Source Sans 3',sans-serif;
+      text-shadow:0 2px 8px rgba(0,0,0,0.45);}}
+  .desc{{font-size:13.5pt;line-height:1.55;color:rgba(255,255,255,0.90);
+         max-width:480px;font-weight:400;}}
+  .cover-img-wrap{{flex-shrink:0;overflow:hidden;max-height:260px;}}
+  .cover-img-wrap img{{width:100%;height:260px;object-fit:cover;display:block;}}
+  .spacer{{flex:1;min-height:12px;}}
+  .notes{{padding:20px 52px 0;flex-shrink:0;}}
+  .note-box{{padding:11px 15px;font-size:9.5pt;line-height:1.5;
              margin-bottom:10px;font-family:'Source Sans 3',sans-serif;}}
-  .disclaimer{{background:#f0f4fa;border-left:4px solid var(--ndla-blue);
-               color:#222;}}
-  .qr-info{{background:#fdf8ec;border-left:4px solid #c08000;color:#222;}}
-  .notes a{{color:var(--ndla-blue);}}
+  .disclaimer{{background:var(--motivasjon-pale);border-left:4px solid var(--kunnskap);
+               color:var(--svart);}}
+  .qr-info{{background:var(--motivasjon-pale);border-left:4px solid var(--motivasjon);
+            color:var(--svart);}}
+  .notes a{{color:var(--kunnskap);}}
+  .cover-footer{{padding:18px 52px;border-top:2px solid var(--motivasjon-pale);
+                 background:var(--hvit);flex-shrink:0;}}
+  .meta-row{{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;}}
+  .meta-label{{font-size:7.5pt;font-weight:800;text-transform:uppercase;
+               letter-spacing:0.10em;color:var(--kunnskap);margin-bottom:3px;}}
+  .meta-value{{font-size:10pt;color:#444;}}
+  .meta-value a{{color:var(--kunnskap);text-decoration:none;}}
   @page{{size:A4;margin:0;}}
 </style></head><body>
   <div class="cover-header">
@@ -428,6 +439,7 @@ def build_cover_html(subject_url: str, meta: dict, generated_at: str,
       artikkelen på <a href="https://ndla.no">ndla.no</a> der du kan sjå og bruke innhaldet.
     </div>
   </div>
+  <div class="spacer"></div>
   <div class="cover-footer">
     <div class="meta-row">
       <div><div class="meta-label">Generert</div>
