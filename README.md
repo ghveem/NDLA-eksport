@@ -49,16 +49,6 @@ python lag-pdf.py sitemap-norsk-1-abc123.txt
 Resultatet hamnar i ei undermappe på forma `fagnamn-yy-mm-dd/`,
 til dømes `kinesisk-1-26-09-22/`, med den samanslåtte PDF-en inne i same mappe.
 
-## Køyr
-
-```bash
-python eksport.py
-```
-
-Scriptet les sitemap-fila, hentar titlar og iframe-URL-ar via NDLA sitt
-oEmbed-endepunkt, rendrar kvar artikkel til PDF med Playwright, og slår
-alt saman til éin PDF med innhaldsliste fremst.
-
 ## Kva URL-typar er med?
 
 | Type    | Prefix | Forklaring                        |
