@@ -14,3 +14,18 @@ sitemap-*.txt
 sitemap-f-*.txt
 *-[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 .DS_Store
+
+# Hemmelegheiter og lokale filer
+.env*
+*.pem
+*.key
+*.p12
+*token*
+credentials*
+node_modules/
+dist/
+build/
+.next/
+*.log
+.vscode/
+.idea/
