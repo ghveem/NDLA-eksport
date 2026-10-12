@@ -127,8 +127,14 @@ python fiks-qr.py
 # Spesifiser mappe direkte
 python fiks-qr.py kinesisk-1-26-09-22
 
-# Legg til infoboksane på framsida
-python fiks-qr.py --infoboks
+# Lag framsida på nytt og slå saman PDF-en (fag-URL-en blir berre brukt om toc.json manglar)
+python fiks-qr.py --regen-cover [https://ndla.no/...]
+
+# Lag innhaldslista på nytt og slå saman PDF-en
+python fiks-qr.py --regen-toc
+
+# Lag både framside og innhaldsliste på nytt
+python fiks-qr.py --regen-all
 
 # Fjern dupliserte QR-kodar (om scriptet er køyrt to gonger)
 python fiks-qr.py --rens
