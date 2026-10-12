@@ -7,7 +7,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 - Oppsett: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && playwright install chromium`
 - `python lag-pdf.py [sitemap-fil.txt]` køyrer `eksport.py` og deretter `fiks-qr.py`. Utan argument får du meny over `sitemap-*.txt` i mappa
 - `python eksport.py` åleine gir PDF utan QR-etterbehandling
-- `python fiks-qr.py [mappe] [--infoboks | --rens | --debug]` set inn QR-kodar og infoboksar i ein eksisterande eksport utan å køyre alt på nytt
+- `python fiks-qr.py [mappe]` set inn QR-kodar i ein eksisterande eksport utan å køyre alt på nytt. Flagg: `--rens`, `--debug`, `--regen-cover`, `--regen-toc` og `--regen-all` (lagar framside og/eller innhaldsliste på nytt og slår saman PDF-en). Flagget `--infoboks` i README.md finst ikkje i koden
 - Sitemap-filer hentar me frå https://ndla.no/sitemap.xml (ei tekstfil per fag, oppdatert om lag ein gong i veka)
 
 ## Struktur
