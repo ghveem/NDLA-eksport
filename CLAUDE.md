@@ -28,7 +28,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 
 ## Reglar
 
-- Bruk git med små, tydelege commits
+- Bruk git med små, tydelege commits, og aldri push direkte til `master`. Bruk eiga grein og PR
 - Trygg .gitignore, ingen hemmelegheiter eller tokens i repoet
 - Oppdater README.md når noko endrar seg
 - Bruk /ndla-brand for UI. Fargar i eksporten: Kunnskap `#2A1C5E`, Motivasjon `#C8A4F7`, lenker `#004785`
