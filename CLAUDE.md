@@ -5,7 +5,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 ## Køyring
 
 - Oppsett: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && playwright install chromium`
-- `python lag-pdf.py [sitemap-fil.txt]` køyrer `eksport.py` og deretter `fiks-qr.py`. Utan argument får du meny over `sitemap-*.txt` i mappa
+- `python lag-pdf.py` køyrer `eksport.py` og deretter `fiks-qr.py` på den nye eksportmappa. `eksport.py` finn `sitemap-f-*.txt` i mappa og spør om stadfesting, eller viser meny når det er fleire
 - `python eksport.py` åleine gir PDF utan QR-etterbehandling
 - `python fiks-qr.py [mappe]` set inn QR-kodar i ein eksisterande eksport utan å køyre alt på nytt. Flagg: `--rens`, `--debug`, `--regen-cover`, `--regen-toc` og `--regen-all` (lagar framside og/eller innhaldsliste på nytt og slår saman PDF-en)
 - Sitemap-filer hentar me frå https://ndla.no/sitemap.xml (ei tekstfil per fag, oppdatert om lag ein gong i veka)
@@ -24,6 +24,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 - Artikkel-URL kan ligge på ei anna side enn embed-boksen, derfor skannar `fiks-qr.py` i to omgangar
 - PDF-en brukar `tagged=True` for UU. Valider med PAC etter endringar i rendering
 - Eksporten er avhengig av ndla.no (oEmbed og `article-iframe`). Endringar i NDLA si markup kan bryte rendering
+- Sitemap-argumentet til `lag-pdf.py` blir sett i `NDLA_SITEMAP`, men `eksport.py` les ikkje variabelen, så argumentet blir ignorert og du får spørsmålet eller menyen likevel
 - `*.pdf` er i .gitignore, også `POC-fageksport-readme.pdf`
 
 ## Reglar
