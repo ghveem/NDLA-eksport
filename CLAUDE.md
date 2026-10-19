@@ -16,7 +16,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 - `fiks-qr.py`: PyMuPDF. Erstattar H5P, YouTube, Brightcove og andre iframes med QR-kodar (segno, lokalt) som peikar til artikkelen på ndla.no
 - `lag-pdf.py`: wrapper som køyrer dei to over
 - `fonts/`: Source Serif 4 og Source Sans 3, lasta lokalt via `@font-face`. Manglar mappa, fell eksporten stille attende til systemfontar
-- Utdata: `<fag>-yy-mm-dd/` med samla PDF og `sider/` (ei PDF per artikkel). Alt dette, og `sitemap-*.txt`, er i .gitignore
+- Utdata: `<fag>-yy-mm-dd/` med samla PDF, `toc.json` (titlar og fag-URL, som `--regen-*` i `fiks-qr.py` les) og `sider/` (`0000_cover.pdf`, `0000_toc.pdf` og ei PDF per artikkel). Alt dette, og `sitemap-*.txt`, er i .gitignore
 
 ## Fallgruver
 
