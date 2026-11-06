@@ -2,6 +2,12 @@
 
 Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå ei sitemap-fil. Sjå README.md for detaljar.
 
+## Formål og avgrensingar
+
+- Mål: prøve ut ein samla, UU-tagga PDF av alle artiklar i eit NDLA-fag, med QR-kodar i staden for interaktivt innhald
+- Proof of concept med lokal køyring. Ikkje eit produksjonsverktøy, og ingenting blir publisert automatisk
+- Berre artiklar på `/e/` og `/r/` er med, ikkje fagsider (`/f/`)
+
 ## Køyring
 
 - Oppsett: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && playwright install chromium`
