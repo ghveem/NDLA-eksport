@@ -13,6 +13,7 @@ import asyncio
 import base64
 import io
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -187,6 +188,15 @@ def derive_slug(sitemap_file: str) -> str:
 
 def pick_sitemap() -> Path:
     """Finn sitemap-filer i gjeldande mappe og la brukaren velje."""
+    # lag-pdf.py set NDLA_SITEMAP når sitemap-fila er gitt som argument
+    env_sitemap = os.environ.get("NDLA_SITEMAP")
+    if env_sitemap:
+        f = Path(env_sitemap)
+        if not f.is_file():
+            print(f"❌  Fann ikkje sitemap-fila {f}.")
+            sys.exit(1)
+        return f
+
     candidates = sorted(Path(".").glob("sitemap-f-*.txt"))
     if not candidates:
         print("❌  Ingen sitemap-fil funnen i mappa.")

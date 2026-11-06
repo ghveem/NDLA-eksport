@@ -40,8 +40,7 @@ def main():
 
     eksport_args = [sys.executable, "eksport.py"]
     if sitemap_arg:
-        # Legg til sitemap-arg så pick_sitemap kan plukke den opp
-        # (eksport.py les sys.argv sjølv – vi set env-variabel)
+        # pick_sitemap i eksport.py les sitemap-fila frå NDLA_SITEMAP
         os.environ["NDLA_SITEMAP"] = sitemap_arg[0]
     run(*eksport_args)
 

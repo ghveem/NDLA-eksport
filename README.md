@@ -31,10 +31,10 @@ python lag-pdf.py
 ```
 
 Du vel fag frå ei meny, og scriptet køyrer `eksport.py` + `fiks-qr.py` i rekkjefølgje.
-Du kan òg sende inn sitemap-fila direkte:
+Du kan òg sende inn sitemap-fila direkte, så slepp du spørsmålet og menyen:
 
 ```bash
-python lag-pdf.py sitemap-norsk-1-abc123.txt
+python lag-pdf.py sitemap-f-norsk-1-abc123.txt
 ```
 
 ---
