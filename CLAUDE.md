@@ -27,6 +27,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 ## Fallgruver
 
 - `fiks-qr.py --rens` fjernar doble QR-kodar etter at skriptet vart køyrt to gonger
+- Mappenamnet har berre dato, så ein ny eksport same dag av same fag skriv over den gamle. Då finn ikkje `lag-pdf.py` ei ny mappe og tek i staden den alfabetisk siste eksportmappa, som kan vere eit anna fag. Slett eller flytt den gamle mappa først
 - Artikkel-URL kan ligge på ei anna side enn embed-boksen, derfor skannar `fiks-qr.py` i to omgangar
 - PDF-en brukar `tagged=True` for UU. Valider med PAC etter endringar i rendering
 - Eksporten er avhengig av ndla.no (oEmbed og `article-iframe`). Endringar i NDLA si markup kan bryte rendering
