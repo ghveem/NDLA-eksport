@@ -13,7 +13,7 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 - Oppsett: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && playwright install chromium`
 - `python lag-pdf.py [sitemap-fil]` køyrer `eksport.py` og deretter `fiks-qr.py` på den nye eksportmappa. Med sitemap-fil som argument blir ho send vidare i `NDLA_SITEMAP`. Utan argument finn `eksport.py` `sitemap-f-*.txt` i mappa og spør om stadfesting, eller viser meny når det er fleire
 - `python eksport.py` åleine gir PDF utan QR-etterbehandling
-- `python fiks-qr.py [mappe]` set inn QR-kodar i ein eksisterande eksport utan å køyre alt på nytt. Flagg: `--rens`, `--debug`, `--regen-cover`, `--regen-toc` og `--regen-all` (lagar framside og/eller innhaldsliste på nytt og slår saman PDF-en)
+- `python fiks-qr.py [mappe]` set inn QR-kodar i ein eksisterande eksport utan å køyre alt på nytt. Flagg: `--rens`, `--debug` (listar lenker i dei 20 første sidene), `--regen-cover`, `--regen-toc` og `--regen-all` (lagar framside og/eller innhaldsliste på nytt og slår saman PDF-en). Utan mappe-argument tek `fiks-qr.py` den siste eksportmappa. `--regen-cover` tek valfritt ei fag-URL, som berre blir brukt når `toc.json` manglar
 - Sitemap-filer hentar me frå https://ndla.no/sitemap.xml (ei tekstfil per fag, oppdatert om lag ein gong i veka)
 
 ## Struktur
@@ -25,6 +25,8 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 - Utdata: `<fag>-yy-mm-dd/` med samla PDF, `toc.json` (titlar og fag-URL, som `--regen-*` i `fiks-qr.py` les) og `sider/` (`0000_cover.pdf`, `0000_toc.pdf` og ei PDF per artikkel). Alt dette, og `sitemap-*.txt`, er i .gitignore
 
 ## Fallgruver
+
+- Ingen testar eller lint i repoet. Test ei endring med éin eksport av eit lite fag og sjå resultatet i PDF-en
 
 - `fiks-qr.py --rens` fjernar doble QR-kodar etter at skriptet vart køyrt to gonger
 - Mappenamnet har berre dato, så ein ny eksport same dag av same fag skriv over den gamle. Då finn ikkje `lag-pdf.py` ei ny mappe og tek i staden den alfabetisk siste eksportmappa, som kan vere eit anna fag. Slett eller flytt den gamle mappa først
