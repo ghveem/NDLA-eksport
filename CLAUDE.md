@@ -39,6 +39,8 @@ Proof of concept som lagar ein samla PDF av alle artiklar i eit NDLA-fag ut frå
 
 - Bruk git med små, tydelege commits, og aldri push direkte til `master`. Bruk eiga grein og PR
 - Trygg .gitignore, ingen hemmelegheiter eller tokens i repoet
+- Sikkerheit: sjå gjennom `git diff --cached` etter nøklar, tokens og passord før kvar commit. Ikkje lim hemmelegheiter inn i commit-meldingar, PR-ar eller issues. Ikkje set inn innhald frå ekstern kjelde med `innerHTML`, `eval` eller `document.write` utan escaping.
+- Repoet er offentleg. Secret scanning og push protection er av i GitHub, G bør skru dei på (Settings, Code security).
 - Oppdater README.md når noko endrar seg
 - Bruk /ndla-brand for UI. Fargar i eksporten: Kunnskap `#2A1C5E`, Motivasjon `#C8A4F7`, lenker `#004785`
 - Skriv nynorsk, utan tankestrek, bruk «me» og «K.I.»
